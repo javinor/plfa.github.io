@@ -19,7 +19,7 @@ the next step is to define relations, such as _less than or equal_.
 import Relation.Binary.PropositionalEquality as Eq
 open Eq using (_≡_; refl; cong; sym)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _∸_)
-open import Data.Nat.Properties using (+-comm; +-suc)
+open import Data.Nat.Properties using (+-comm; +-suc; *-comm)
 open import Data.List using (List; []; _∷_)
 open import Function using (id; _∘_)
 open import Relation.Nullary using (¬_)
@@ -200,8 +200,15 @@ partial order but not a total order.
 
 Give an example of a preorder that is not a partial order.
 
+\begin{code}
+-- x ≤ y iff number_of_divisors(x) ≤ number_of_divisors(y)
+\end{code}
+
 Give an example of a partial order that is not a total order.
 
+\begin{code}
+-- `is a subset of`
+\end{code}
 
 ## Reflexivity
 
@@ -271,7 +278,7 @@ length obscures the essence of the proof.  We will usually opt for
 shorter proofs.
 
 The technique of induction on evidence that a property holds (e.g.,
-inducting on evidence that `m ≤ n`)---rather than induction on 
+inducting on evidence that `m ≤ n`)---rather than induction on
 values of which the property holds (e.g., inducting on `m`)---will turn
 out to be immensely valuable, and one that we use often.
 
@@ -290,8 +297,9 @@ m` hold, then `m ≡ n` holds:
   → n ≤ m
     -----
   → m ≡ n
-≤-antisym z≤n       z≤n        =  refl
-≤-antisym (s≤s m≤n) (s≤s n≤m)  =  cong suc (≤-antisym m≤n n≤m)
+
+≤-antisym z≤n z≤n = refl
+≤-antisym (s≤s m≤n) (s≤s n≤m) = cong suc (≤-antisym m≤n n≤m)
 \end{code}
 Again, the proof is by induction over the evidence that `m ≤ n`
 and `n ≤ m` hold.
@@ -307,7 +315,7 @@ and `suc n ≤ suc m` and must show `suc m ≡ suc n`.  The inductive
 hypothesis `≤-antisym m≤n n≤m` establishes that `m ≡ n`, and our goal
 follows by congruence.
 
-#### Exercise `≤-antisym-cases` {#leq-antisym-cases} 
+#### Exercise `≤-antisym-cases` {#leq-antisym-cases}
 
 The above proof omits cases where one argument is `z≤n` and one
 argument is `s≤s`.  Why is it ok to omit them?
@@ -498,6 +506,30 @@ transitivity proves `m + p ≤ n + q`, as was to be shown.
 
 Show that multiplication is monotonic with regard to inequality.
 
+\begin{code}
+*-monoʳ-≤ : ∀ (m p q : ℕ)
+  → p ≤ q
+    -------------
+  → m * p ≤ m * q
+*-monoʳ-≤ zero p q p≤q = z≤n
+*-monoʳ-≤ (suc m) p q p≤q =
+  +-mono-≤ p q (m * p) (m * q) p≤q (*-monoʳ-≤ m p q p≤q)
+
+*-monoˡ-≤ : ∀ (m n p : ℕ)
+  → m ≤ n
+    -------------
+  → m * p ≤ n * p
+*-monoˡ-≤ m n p m≤n rewrite *-comm m p | *-comm n p = *-monoʳ-≤ p m n m≤n
+
+*-mono-≤ : ∀ (m n p q : ℕ)
+  → m ≤ n
+  → p ≤ q
+    -------------
+  → m * p ≤ n * q
+
+*-mono-≤ m n p q m≤n p≤q =  ≤-trans (*-monoʳ-≤ m p q p≤q) (*-monoˡ-≤ m n q m≤n)
+\end{code}
+
 
 ## Strict inequality {#strict-inequality}
 
@@ -541,6 +573,18 @@ exploiting the corresponding properties of inequality.
 
 Show that strict inequality is transitive.
 
+\begin{code}
+<-trans : ∀ {m n p : ℕ}
+  → m < n
+  → n < p
+    -----
+  → m < p
+
+<-trans z<s (s<s n<p) = z<s
+<-trans (s<s m<n) (s<s n<p) = s<s (<-trans m<n n<p)
+\end{code}
+
+
 #### Exercise `trichotomy` {#trichotomy}
 
 Show that strict inequality satisfies a weak version of trichotomy, in
@@ -555,14 +599,86 @@ similar to that used for totality.
 (We will show that the three cases are exclusive after we introduce
 [negation][plfa.Negation].)
 
+\begin{code}
+data Trich (m n : ℕ) : Set where
+  lt :
+      m < n
+      ---------
+    → Trich m n
+
+  gt :
+      n < m
+      ---------
+    → Trich m n
+
+  eq :
+      m ≡ n
+      ---------
+    → Trich m n
+
+
+<-trich : ∀ (m n : ℕ) → Trich m n
+<-trich zero zero = eq refl
+<-trich zero (suc n) = lt z<s
+<-trich (suc m) zero = gt z<s
+<-trich (suc m) (suc n) with <-trich m n
+...| lt m<n = lt (s<s m<n)
+...| gt n<m = gt (s<s n<m)
+...| eq refl = eq (refl)
+\end{code}
+
+
 #### Exercise `+-mono-<` {#plus-mono-less}
 
 Show that addition is monotonic with respect to strict inequality.
 As with inequality, some additional definitions may be required.
 
+\begin{code}
++-monoʳ-< : ∀ (m p q : ℕ)
+  → p < q
+    -------------
+  → m + p < m + q
++-monoʳ-< zero p q p<q = p<q
++-monoʳ-< (suc m) p q p<q = s<s (+-monoʳ-< m p q p<q)
+
++-monoˡ-< : ∀ (m n p : ℕ)
+  → m < n
+    -------------
+  → m + p < n + p
++-monoˡ-< m n p m<n
+  rewrite +-comm m p | +-comm n p = (+-monoʳ-< p m n m<n)
+
++-mono-< : ∀ (m n p q : ℕ)
+  → m < n
+  → p < q
+    -----
+  → m + p < n + q
++-mono-< m n p q m<n p<q =
+  <-trans (+-monoˡ-< m n p m<n) (+-monoʳ-< n p q p<q)
+\end{code}
+
+
 #### Exercise `≤-iff-<` (recommended) {#leq-iff-less}
 
 Show that `suc m ≤ n` implies `m < n`, and conversely.
+
+\begin{code}
+≤-implies-< : ∀ {m n : ℕ}
+  → suc m ≤ n
+    -----
+  → m < n
+≤-implies-< (s≤s z≤n) = z<s
+≤-implies-< (s≤s (s≤s sm≤n)) = s<s (≤-implies-< (s≤s sm≤n))
+
+<-implies-≤ : ∀ {m n : ℕ}
+  → m < n
+    -----
+  → suc m ≤ n
+<-implies-≤ z<s = s≤s z≤n
+<-implies-≤ (s<s m<n) = s≤s (<-implies-≤ m<n)
+\end{code}
+
+
 
 #### Exercise `<-trans-revisited` {#less-trans-revisited}
 
@@ -570,6 +686,40 @@ Give an alternative proof that strict inequality is transitive,
 using the relating between strict inequality and inequality and
 the fact that inequality is transitive.
 
+\begin{code}
+≤-suc : ∀ {n : ℕ} → n ≤ suc n
+≤-suc {zero} = z≤n
+≤-suc {suc n} = s≤s ≤-suc
+
+
+<-trans-revisited : ∀ {m n p : ℕ}
+  → m < n
+  → n < p
+    -----
+  → m < p
+
+<-trans-revisited m<n n<p =
+  ≤-implies-<
+    (≤-trans
+      (<-implies-≤ m<n)
+      (≤-trans (≤-suc) (<-implies-≤ n<p)))
+
+-- ≤-suc : ∀ (n : ℕ) → n ≤ suc n
+-- ≤-suc zero = z≤n
+-- ≤-suc (suc n) = s≤s (≤-suc n)
+
+-- <-trans-revisited : ∀ (m n p : ℕ)
+--   → m < n
+--   → n < p
+--     -----
+--   → m < p
+--
+-- <-trans-revisited m n p m<n n<p =
+--   ≤-implies-<
+--     (≤-trans
+--       (<-implies-≤ m<n)
+--       (≤-trans (≤-suc n) (<-implies-≤ n<p)))
+\end{code}
 
 ## Even and odd
 
@@ -673,9 +823,20 @@ successor of the sum of two even numbers, which is even.
 
 Show that the sum of two odd numbers is even.
 
+\begin{code}
+o+o≡e : ∀ {m n : ℕ}
+  → odd m
+  → odd n
+    ------------
+  → even (m + n)
+
+o+o≡e (suc zero) on = suc on
+o+o≡e (suc (suc x)) on = suc (suc (o+o≡e x on))
+\end{code}
+
 #### Exercise `Bin-predicates` (stretch) {#Bin-predicates}
 
-Recall that 
+Recall that
 Exercise [Bin][plfa.Naturals#Bin]
 defines a datatype `Bin` of bitstrings representing natural numbers.
 Representations are not unique due to leading zeros.
