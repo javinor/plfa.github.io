@@ -951,7 +951,7 @@ number.  For example, since `1100` encodes twelve, we should have:
 
 \begin{code}
 inc : Bin → Bin
-inc nil = nil
+inc nil = x1 nil
 inc (x0 x) = x1 x
 inc (x1 nil) = x0 x1 nil
 inc (x1 x) = x0 (inc x)
