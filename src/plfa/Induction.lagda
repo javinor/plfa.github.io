@@ -30,6 +30,7 @@ import Relation.Binary.PropositionalEquality as Eq
 open Eq using (_≡_; refl; cong; sym)
 open Eq.≡-Reasoning using (begin_; _≡⟨⟩_; _≡⟨_⟩_; _∎)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _∸_)
+-- open import Data.AVL.Sets using (delete)
 \end{code}
 
 
@@ -777,6 +778,13 @@ Going into the remaining hole and typing `C-c C-,` will display the text:
     n : ℕ
     m : ℕ
 
+\begin{code}
++-assoc2 : ∀ (m n p : ℕ) → (m + n) + p ≡ m + (n + p)
++-assoc2 zero n p = refl
++-assoc2 (suc m) n p rewrite +-assoc2 m n p = refl
+\end{code}
+
+
 The proof of the given goal is trivial, and going into the goal and
 typing `C-c C-r` will fill it in, completing the proof:
 
@@ -785,7 +793,7 @@ typing `C-c C-r` will fill it in, completing the proof:
     +-assoc′ (suc m) n p rewrite +-assoc′ m n p = refl
 
 
-#### Exercise `+-swap` (recommended) {#plus-swap} 
+#### Exercise `+-swap` (recommended) {#plus-swap}
 
 Show
 
@@ -795,6 +803,21 @@ for all naturals `m`, `n`, and `p`. No induction is needed,
 just apply the previous results which show addition
 is associative and commutative.
 
+\begin{code}
++-swap : ∀ (m n p : ℕ) → m + (n + p) ≡ n + (m + p)
++-swap m n p =
+  begin
+    m + (n + p)
+  ≡⟨ sym (+-assoc m n p) ⟩
+    (m + n) + p
+  ≡⟨ cong (_+ p) (+-comm m n) ⟩
+    (n + m) + p
+  ≡⟨ +-assoc n m p ⟩
+    n + (m + p)
+  ∎
+\end{code}
+
+
 #### Exercise `*-distrib-+` (recommended) {#times-distrib-plus}
 
 Show multiplication distributes over addition, that is,
@@ -803,6 +826,26 @@ Show multiplication distributes over addition, that is,
 
 for all naturals `m`, `n`, and `p`.
 
+\begin{code}
+*-distrib-+ : ∀ (m n p : ℕ) → (m + n) * p ≡ m * p + n * p
+*-distrib-+ zero n p = refl
+*-distrib-+ (suc m) n p =
+  begin
+    (suc m + n) * p
+  ≡⟨⟩
+    suc (m + n) * p
+  ≡⟨⟩
+    p + (m + n) * p
+  ≡⟨ cong (p +_) (*-distrib-+ m n p) ⟩
+    p + (m * p + n * p)
+  ≡⟨ sym (+-assoc p (m * p) (n * p)) ⟩
+    (p + (m * p)) + n * p
+  ≡⟨⟩
+    (suc m) * p + n * p
+  ∎
+\end{code}
+
+
 #### Exercise `*-assoc` (recommended) {#times-assoc}
 
 Show multiplication is associative, that is,
@@ -810,6 +853,12 @@ Show multiplication is associative, that is,
     (m * n) * p ≡ m * (n * p)
 
 for all naturals `m`, `n`, and `p`.
+
+\begin{code}
+*-assoc : ∀ (m n p : ℕ) → (m * n) * p ≡ m * (n * p)
+*-assoc zero n p = refl
+*-assoc (suc m) n p rewrite +-suc′ m n | *-distrib-+ n (m * n) p | *-assoc m n p = refl
+\end{code}
 
 #### Exercise `*-comm` {#times-comm}
 
@@ -820,6 +869,62 @@ Show multiplication is commutative, that is,
 for all naturals `m` and `n`.  As with commutativity of addition,
 you will need to formulate and prove suitable lemmas.
 
+\begin{code}
+*-zero-right : ∀ (m : ℕ) → m * zero ≡ zero
+*-zero-right zero = refl
+*-zero-right (suc m) =
+  begin
+    suc m * zero
+  ≡⟨⟩
+    zero + m * zero
+  ≡⟨ *-zero-right m ⟩
+    zero
+  ∎
+
+*-suc : ∀ (m n : ℕ) → m * suc n ≡ m * n + m
+*-suc zero n = refl
+*-suc (suc m) n =
+  begin
+    suc m * suc n
+  ≡⟨⟩
+    suc n + m * suc n
+  ≡⟨ cong ((suc n) +_) (*-suc m n) ⟩
+    suc n + (m * n + m)
+  ≡⟨⟩
+    suc (n + (m * n + m))
+  ≡⟨ cong suc (sym (+-assoc n (m * n) m)) ⟩
+    suc ((n + m * n) + m)
+  ≡⟨⟩
+    suc ((suc m * n) + m)
+  ≡⟨ sym (+-suc (suc m * n) m) ⟩
+    (suc m * n) + suc m
+  ∎
+
+*-comm : ∀ (m n : ℕ) → m * n ≡ n * m
+*-comm zero n =
+  begin
+    zero * n
+  ≡⟨⟩
+    zero
+  ≡⟨ sym (*-zero-right n) ⟩
+    n * zero
+  ∎
+*-comm (suc m) n =
+  begin
+    suc m * n
+  ≡⟨⟩
+    n + (m * n)
+  ≡⟨ cong (n +_) (*-comm m n) ⟩
+    n + (n * m)
+  ≡⟨ +-comm n (n * m)⟩
+    (n * m) + n
+  ≡⟨ sym (*-suc n m)⟩
+    n * suc m
+  ∎
+\end{code}
+
+
+
 #### Exercise `0∸n≡0` {#zero-monus}
 
 Show
@@ -827,6 +932,13 @@ Show
     zero ∸ n ≡ zero
 
 for all naturals `n`. Did your proof require induction?
+
+\begin{code}
+∸-zero-left : ∀ (n : ℕ) → zero ∸ n ≡ zero
+∸-zero-left zero = refl
+∸-zero-left (suc n) = refl
+\end{code}
+
 
 #### Exercise `∸-+-assoc` {#monus-plus-assoc}
 
@@ -836,9 +948,54 @@ Show that monus associates with addition, that is,
 
 for all naturals `m`, `n`, and `p`.
 
+\begin{code}
+-- _∸_ : ℕ → ℕ → ℕ
+-- m     ∸ zero   =  m
+-- zero  ∸ suc n  =  zero
+-- suc m ∸ suc n  =  m ∸ n
+
+∸-+-assoc : ∀ (m n p : ℕ) → m ∸ n ∸ p ≡ m ∸ (n + p)
+∸-+-assoc zero zero p = refl
+
+∸-+-assoc zero n p =
+  begin
+    (zero ∸ n) ∸ p
+  ≡⟨ cong (_∸ p) (∸-zero-left n) ⟩
+    zero ∸ p
+  ≡⟨ ∸-zero-left p ⟩
+    zero
+  ≡⟨ sym (∸-zero-left (n + p)) ⟩
+    zero ∸ (n + p)
+  ∎
+
+∸-+-assoc m zero p =
+  begin
+    (m ∸ zero) ∸ p
+  ≡⟨⟩
+    m ∸ p
+  ≡⟨⟩
+    m ∸ (zero + p)
+  ∎
+
+∸-+-assoc (suc m) (suc n) p =
+  begin
+    (suc m ∸ suc n) ∸ p
+  ≡⟨⟩
+    (m ∸ n) ∸ p
+  ≡⟨ ∸-+-assoc m n p ⟩
+    m ∸ (n + p)
+  ≡⟨⟩
+    suc m ∸ suc (n + p)
+  ≡⟨⟩
+    suc m ∸ (suc n + p)
+  ∎
+
+\end{code}
+
+
 #### Exercise `Bin-laws` (stretch) {#Bin-laws}
 
-Recall that 
+Recall that
 Exercise [Bin][plfa.Naturals#Bin]
 defines a datatype of bitstrings representing natural numbers
 \begin{code}
@@ -853,6 +1010,22 @@ and asks you to define functions
     to    : ℕ → Bin
     from  : Bin → ℕ
 
+\begin{code}
+inc : Bin → Bin
+inc nil = x1 nil
+inc (x0 x) = x1 x
+inc (x1 x) = x0 (inc x)
+
+to   : ℕ → Bin
+to zero = x0 nil
+to (suc n) = inc (to n)
+
+from : Bin → ℕ
+from nil = 0
+from (x0 x) = 0 + 2 * from x
+from (x1 x) = 1 + 2 * from x
+\end{code}
+
 Consider the following laws, where `n` ranges over naturals and `x`
 over bitstrings:
 
@@ -861,6 +1034,58 @@ over bitstrings:
     from (to n) ≡ n
 
 For each law: if it holds, prove; if not, give a counterexample.
+
+\begin{code}
+-- _ : ∃ (x : Bin) → t (from x) ≢ x
+-- _ = nil
+
+from-after-inc : ∀ (x : Bin) → from (inc x) ≡ suc (from x)
+from-after-inc nil = refl
+from-after-inc (x0 x) = refl
+
+from-after-inc (x1 x) =
+  begin
+    from (inc (x1 x))
+  ≡⟨⟩
+    from (x0 inc x)
+  ≡⟨⟩
+    0 + 2 * from (inc x)
+  ≡⟨⟩
+    2 * from (inc (x))
+  ≡⟨ cong (2 *_) (from-after-inc x) ⟩
+    2 * suc (from (x))
+  ≡⟨ *-comm 2 (suc (from x)) ⟩
+    suc (from x) * 2
+  ≡⟨⟩
+    (1 + from x) * 2
+  ≡⟨ *-distrib-+ 1 (from x) 2 ⟩
+    2 + from x * 2
+  ≡⟨ cong (2 +_) (*-comm (from x) 2) ⟩
+    2 + 2 * from x
+  ≡⟨⟩
+    suc (1 + 2 * from x)
+  ≡⟨⟩
+    suc (from (inc (x0 x)))
+  ≡⟨⟩
+    suc (from (x1 x))
+  ∎
+
+from-after-to : ∀ (n : ℕ) → from (to n) ≡ n
+from-after-to zero = refl
+from-after-to (suc n) =
+  begin
+    from (to (suc n))
+  ≡⟨⟩
+    from (inc (to n))
+  ≡⟨ from-after-inc (to n) ⟩
+    suc (from (to n))
+  ≡⟨ cong suc (from-after-to n) ⟩
+    suc n
+  ∎
+
+\end{code}
+
+
 
 
 ## Standard library
