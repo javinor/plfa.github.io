@@ -481,6 +481,21 @@ it can easily be inferred from the corresponding term.
 
 Compute `3 * 4`, writing out your reasoning as a chain of equations.
 
+\begin{code}
+_ =
+  begin
+    3 * 4
+  ≡⟨⟩    -- inductive case
+    4 + (2 * 4)
+  ≡⟨⟩    -- inductive case
+    4 + (4 + (1 * 4))
+  ≡⟨⟩    -- base case
+    4 + (4 + (4 + (0 * 3)))
+  ≡⟨⟩    -- simplify
+    12
+  ∎
+\end{code}
+
 
 #### Exercise `_^_` (recommended) {#power}
 
@@ -491,6 +506,30 @@ Define exponentiation, which is given by the following equations:
 
 Check that `3 ^ 4` is `81`.
 
+\begin{code}
+_^_ : ℕ → ℕ → ℕ
+n ^ zero  =  suc zero
+n ^ suc m =  n * (n ^ m)
+
+_ : 3 ^ 4 ≡ 81
+_ =
+  begin
+    3 ^ 4
+  ≡⟨⟩
+    3 * (3 ^ 3)
+  ≡⟨⟩
+    3 * (3 * (3 ^ 2))
+  ≡⟨⟩
+    3 * (3 * (3 * (3 ^ 1)))
+  ≡⟨⟩
+    3 * (3 * (3 * (3 * (3 ^ 0))))
+  ≡⟨⟩
+    3 * (3 * (3 * (3 * 1)))
+  ≡⟨⟩
+    81
+  ∎
+
+\end{code}
 
 ## Monus
 
@@ -550,6 +589,27 @@ _ =
 #### Exercise `∸-examples` (recommended) {#monus-examples}
 
 Compute `5 ∸ 3` and `3 ∸ 5`, writing out your reasoning as a chain of equations.
+
+\begin{code}
+-- _∸_ : ℕ → ℕ → ℕ
+-- m     ∸ zero   =  m
+-- zero  ∸ suc n  =  zero
+-- suc m ∸ suc n  =  m ∸ n
+
+_ =
+  begin
+    5 ∸ 3
+  ≡⟨⟩
+    4 ∸ 2
+  ≡⟨⟩
+    3 ∸ 1
+  ≡⟨⟩
+    2 ∸ 0
+  ≡⟨⟩
+    2
+  ∎
+\end{code}
+
 
 
 ## Precedence
@@ -809,6 +869,15 @@ Filling the hole with `suc ?` and typing `C-c C-space` results in the following:
     zero + n = n
     suc m + n = suc { }1
 
+\begin{code}
+add : ℕ → ℕ → ℕ
+add zero n = n
+add (suc m) n = suc (add m n)
+
+\end{code}
+
+
+
 Going into the new hole and typing `C-c C-,` gives similar information to before:
 
     Goal: ℕ
@@ -880,8 +949,34 @@ number.  For example, since `1100` encodes twelve, we should have:
 
     inc (x1 x1 x0 x1 nil) ≡ x0 x0 x1 x1 nil
 
+\begin{code}
+inc : Bin → Bin
+inc nil = nil
+inc (x0 x) = x1 x
+inc (x1 nil) = x0 x1 nil
+inc (x1 x) = x0 (inc x)
+\end{code}
+
 Confirm that this gives the correct answer for the bitstrings
 encoding zero through four.
+
+\begin{code}
+_ : inc (x1 x1 x0 x1 nil) ≡ x0 x0 x1 x1 nil
+_ = refl
+
+_ : inc (x0 nil) ≡ x1 nil
+_ = refl
+
+_ : inc (x1 nil) ≡ x0 x1 nil
+_ = refl
+
+_ : inc (x0 x1 nil) ≡ x1 x1 nil
+_ = refl
+
+_ : inc (x1 x1 nil) ≡ x0 x0 x1 nil
+_ = refl
+\end{code}
+
 
 Using the above, define a pair of functions to convert
 between the two representations.
@@ -889,9 +984,46 @@ between the two representations.
     to   : ℕ → Bin
     from : Bin → ℕ
 
+\begin{code}
+to   : ℕ → Bin
+to zero = x0 nil
+to (suc n) = inc (to n)
+
+from : Bin → ℕ
+from nil = 0
+from (x0 x) = 0 + 2 * from x
+from (x1 x) = 1 + 2 * from x
+\end{code}
+
+
 For the former, choose the bitstring to have no leading zeros if it
 represents a positive natural, and represent zero by `x0 nil`.
 Confirm that these both give the correct answer for zero through four.
+
+\begin{code}
+_ : to 0 ≡ x0 nil
+_ = refl
+_ : to 1 ≡ x1 nil
+_ = refl
+_ : to 2 ≡ x0 x1 nil
+_ = refl
+_ : to 3 ≡ x1 x1 nil
+_ = refl
+_ : to 4 ≡ x0 x0 x1 nil
+_ = refl
+
+_ : from (x0 nil) ≡ 0
+_ = refl
+_ : from (x1 nil) ≡ 1
+_ = refl
+_ : from (x0 x1 nil) ≡ 2
+_ = refl
+_ : from (x1 x1 nil) ≡ 3
+_ = refl
+_ : from (x0 x0 x1 nil) ≡ 4
+_ = refl
+\end{code}
+
 
 
 
