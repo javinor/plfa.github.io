@@ -845,6 +845,13 @@ Hence, eleven may be represented by both of the following:
     x1 x1 x0 x1 nil
     x1 x1 x0 x1 x0 x0 nil
 
+\begin{code}
+data Bin : Set where
+  nil : Bin
+  x0_ : Bin → Bin
+  x1_ : Bin → Bin
+\end{code}
+
 Define a predicate
 
     Can : Bin → Set
@@ -859,6 +866,36 @@ auxiliary predicate
 that holds only if the bistring has a leading one.  A bitstring is
 canonical if it has a leading one (representing a positive number) or
 if it consists of a single zero (representing zero).
+
+\begin{code}
+data One : Bin → Set
+data One where
+  one :
+      ---------
+      One (x1 nil)
+
+  append0 : ∀ {x : Bin}
+    → One x
+      ------------
+    → One (x0 x)
+
+  append1 : ∀ {x : Bin}
+    → One x
+      ------------
+    → One (x1 x)
+
+data Can : Bin → Set
+data Can where
+  zero :
+      ---------
+      Can (x0 nil)
+
+  leading-one : ∀ {x : Bin}
+    → One x
+      ------------
+    → Can x
+\end{code}
+
 
 Show that increment preserves canonical bitstrings:
 
@@ -881,6 +918,65 @@ and back is the identity:
 
 (Hint: For each of these, you may first need to prove related
 properties of `One`.)
+
+\begin{code}
+inc : Bin → Bin
+inc nil = x1 nil
+inc (x0 x) = x1 x
+inc (x1 x) = x0 (inc x)
+
+incOne : ∀ {x : Bin}
+  → One x
+    ------------
+  → One (inc x)
+incOne one = append0 one
+incOne (append0 x) = append1 x
+incOne (append1 x) = append0 (incOne x)
+
+incCan : ∀ {x : Bin}
+  → Can x
+    ------------
+  → Can (inc x)
+incCan zero = leading-one one
+incCan (leading-one x₁) = leading-one (incOne x₁)
+
+
+to   : ℕ → Bin
+to zero = x0 nil
+to (suc n) = inc (to n)
+
+toCan : ∀ (n : ℕ) → Can(to n)
+toCan zero = zero
+toCan (suc n) = incCan (toCan n)
+
+
+from : Bin → ℕ
+from nil = 0
+from (x0 x) = 0 + 2 * from x
+from (x1 x) = 1 + 2 * from x
+
+-- toFromOne : ∀ {x : Bin}
+--   → One x
+--     ---------------
+--   → to (from x) ≡ x
+-- toFromOne one = refl
+-- toFromOne (append0 x) = toFromOne  {!   !}
+-- toFromOne (append1 x) = toFromOne {!   !}
+
+toFromCan : ∀ {x : Bin}
+  → Can x
+    ---------------
+  → to (from x) ≡ x
+toFromCan zero = refl
+-- toFromCan (leading-one x₁) = toFromCan (toCan (from {!   !}))
+toFromCan (leading-one one) = refl
+toFromCan (leading-one (append0 x₁)) = toFromCan ({!   !})
+toFromCan (leading-one (append1 x₁)) = toFromCan ({!   !})
+
+
+\end{code}
+
+
 
 ## Standard library
 
